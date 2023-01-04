@@ -4,6 +4,8 @@ import com.sparta.myselectshop.entity.Product;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @NoArgsConstructor
 public class ProductResponseDto {
@@ -14,6 +16,9 @@ public class ProductResponseDto {
     private int lprice;
     private int myprice;
 
+    private LocalDateTime createAt;
+    private LocalDateTime modifiedAt;
+
     public ProductResponseDto(Product product) {
         this.id = product.getId();
         this.title = product.getTitle();
@@ -21,5 +26,8 @@ public class ProductResponseDto {
         this.image = product.getImage();
         this.lprice = product.getLprice();
         this.myprice = product.getMyprice();
+        this.createAt = product.getCreatedAt();
+        this.modifiedAt = product.getModifiedAt();
+
     }
 }
