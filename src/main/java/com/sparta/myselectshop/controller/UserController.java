@@ -33,8 +33,8 @@ public class UserController {
     }
 
     @ResponseBody
-    @PostMapping("/login")
-    public String login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) {
+    @PostMapping("/login") // http 요청에 body 쪽에 ajax로 데이터가 들어가기 때문에 @RequestBody 붙여줘야 함 // 서버에서 클라이언트 쪽으로 데이터를 반환할 때 HttpServletResponse 객체 사용
+    public String login(@RequestBody LoginRequestDto loginRequestDto, HttpServletResponse response) { // 데이터를 반환할 response 객체에 Header 부분에 우리가 만든 Token 을 넣어 주기 위해서 http~객체 사용
         userService.login(loginRequestDto, response);
         return "success";
     }
