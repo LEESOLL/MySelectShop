@@ -9,6 +9,9 @@ import lombok.Setter;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Entity // DB 테이블 역할을 합니다.
@@ -37,6 +40,9 @@ public class Product extends Timestamped{
     @Column(nullable = false)
     private Long userId;
 
+    @ManyToMany
+    private List<Folder> folderList = new ArrayList<>();
+
     public Product(ProductRequestDto requestDto, Long userId) {
         this.title = requestDto.getTitle();
         this.image = requestDto.getImage();
@@ -54,4 +60,7 @@ public class Product extends Timestamped{
         this.lprice = itemDto.getLprice();
     }
 
+    public void addFolder(Folder folder) {
+        this.folderList.add(folder);
+    }
 }
