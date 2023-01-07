@@ -53,11 +53,17 @@ public class FolderService {
                     () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
             );
 
+            //입력으로 들어온 폴더 이름을 기준으로, 회원이 이미 생성한 폴더들을 조회(폴더이름 중복 조회)
+            List<Folder> existFolderList = folderRepository.findAllByUserAndNameIn(user, folderNames);
+
             List<Folder> folderList = new ArrayList<>();
 
             for (String folderName : folderNames) {
-                Folder folder = new Folder(folderName, user);
-                folderList.add(folder);
+                //이미 생성한 폴더가 아닌 경우에만 폴더 생성
+                if(!isExistFolderName(folderName, existFolderList)) {
+                    Folder folder = new Folder(folderName, user);
+                    folderList.add(folder);
+                }
             }
             return folderRepository.saveAll(folderList);
         } else {
@@ -65,7 +71,7 @@ public class FolderService {
         }
     }
 
-    // 로그인한 회원이 등록된 모든 폴더 조회
+    // 로그인한 회원이 등록한 모든 폴더 조회
     public List<Folder> getFolders(HttpServletRequest request) {
 
         // 사용자의 정보를 가져온다
@@ -94,7 +100,7 @@ public class FolderService {
         }
     }
 
-    @Transactional(readOnly = true) //폴더에 있는 관심상품 가져오기
+    @Transactional(readOnly = true) //폴더별로 관심상품 가져오기
     public Page<Product> getProductsInFolder(Long folderId, int page, int size, String sortBy, boolean isAsc, HttpServletRequest request) {
 
         //페이징 처리
@@ -121,11 +127,20 @@ public class FolderService {
                     () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
             );
 
-            return productRepository.findAllByUserIdAndFolderList_Id(user.getId(), folderId, pageable);
+            return productRepository.findAllByUserIdAndFolderList_Id(user.getId(), folderId, pageable); //folderId 와 userId 를 통해서 폴더에 있는 관심상품 모두 가져오기
 
         } else {
             return null;
         }
+    }
 
+    private boolean isExistFolderName(String folderName, List<Folder> existFolderList) {
+        //기존 폴더 리스트에서 folder name 이 있는지?
+        for(Folder existFolder : existFolderList) {
+            if (existFolder.getName().equals(folderName)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
