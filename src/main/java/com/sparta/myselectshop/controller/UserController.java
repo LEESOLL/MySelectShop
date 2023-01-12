@@ -21,7 +21,7 @@ public class UserController {
         return new ModelAndView("signup");
     }
 
-    @GetMapping("/login") // 로그인 페이지 보여주기
+    @GetMapping("/login-page") // 로그인 페이지 보여주기
     public ModelAndView loginPage() {
         return new ModelAndView("login");
     }
@@ -29,7 +29,7 @@ public class UserController {
     @PostMapping("/signup") // 회원가입 정보 보내주는 URL
     public String signup(SignupRequestDto signupRequestDto) {
         userService.signup(signupRequestDto);
-        return "redirect:/api/user/login";
+        return "redirect:/api/user/login-page";
     }
     @ResponseBody
     @PostMapping("/login") // http 요청에 body 쪽에 ajax로 데이터가 들어가기 때문에 @RequestBody 붙여줘야 함 // 서버에서 클라이언트 쪽으로 데이터를 반환할 때 HttpServletResponse 객체 사용
@@ -37,4 +37,15 @@ public class UserController {
         userService.login(loginRequestDto, response);
         return "success";
     }
+
+    @GetMapping("/forbidden")
+    public ModelAndView getForbidden() {
+        return new ModelAndView("forbidden");
+    }
+
+    @PostMapping("/forbidden")
+    public ModelAndView postForbidden() {
+        return new ModelAndView("forbidden");
+    }
 }
+

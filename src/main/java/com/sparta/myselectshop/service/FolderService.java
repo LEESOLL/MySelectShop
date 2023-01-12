@@ -26,117 +26,49 @@ public class FolderService {
 
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
-
     private final ProductRepository productRepository;
 
     @Transactional // 로그인한 회원에 폴더들 등록
-    public List<Folder> addFolders(List<String> folderNames, HttpServletRequest request) {
+    public List<Folder> addFolders(List<String> folderNames, String name) {
 
-        // Request 에서 Token 가져오기
-        String token = jwtUtil.resolveToken(request);
-        Claims claims; //JWT 안에 있는 정보를 담는 객체
+        User user = userRepository.findByUsername(name).orElseThrow(
+                () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
+        );
 
-        // 토큰이 있는 경우에만 관심상품 조회 가능
-        if (token != null) {
+        //입력으로 들어온 폴더 이름을 기준으로, 회원이 이미 생성한 폴더들을 조회(폴더이름 중복 조회)
+        List<Folder> existFolderList = folderRepository.findAllByUserAndNameIn(user, folderNames);
 
-            // 토큰 검증
-            if (jwtUtil.validateToken(token)) {
-                // 토큰에서 사용자 정보 가져오기
-                claims = jwtUtil.getUserInfoFromToken(token);
-            } else {
-                throw new IllegalArgumentException("Token Error");
+        List<Folder> folderList = new ArrayList<>();
+
+        for (String folderName : folderNames) {
+            //이미 생성한 폴더가 아닌 경우에만 폴더 생성
+            if (!isExistFolderName(folderName, existFolderList)) {
+                Folder folder = new Folder(folderName, user);
+                folderList.add(folder);
             }
-
-            // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
-            );
-
-            //입력으로 들어온 폴더 이름을 기준으로, 회원이 이미 생성한 폴더들을 조회(폴더이름 중복 조회)
-            List<Folder> existFolderList = folderRepository.findAllByUserAndNameIn(user, folderNames);
-
-            List<Folder> folderList = new ArrayList<>();
-
-            for (String folderName : folderNames) {
-                //이미 생성한 폴더가 아닌 경우에만 폴더 생성
-                if(!isExistFolderName(folderName, existFolderList)) {
-                    Folder folder = new Folder(folderName, user);
-                    folderList.add(folder);
-                }
-            }
-            return folderRepository.saveAll(folderList);
-        } else {
-            return null;
         }
+        return folderRepository.saveAll(folderList);
     }
 
     // 로그인한 회원이 등록한 모든 폴더 조회
-    public List<Folder> getFolders(HttpServletRequest request) {
-
-        // 사용자의 정보를 가져온다
-        // Request 에서 Token 가져오기
-         String token = jwtUtil.resolveToken(request);
-         Claims claims;
-
-         // 토큰이 있는 경우에만 관심상품 조회 가능
-        if (token != null) {
-           // token 검증
-           if (jwtUtil.validateToken(token)) {
-               //토큰에서 사용자 정보 가져오기
-               claims = jwtUtil.getUserInfoFromToken(token);
-           } else {
-               throw new IllegalArgumentException("Token Error");
-           }
-
-           // 토큰에서 가져온 사용자 정보를 사용하여 DB 조회
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
-            );
-
-           return folderRepository.findAllByUser(user);
-        } else {
-            return null;
-        }
+    public List<Folder> getFolders(User user) {
+        return folderRepository.findAllByUser(user);
     }
 
     @Transactional(readOnly = true) //폴더별로 관심상품 가져오기
-    public Page<Product> getProductsInFolder(Long folderId, int page, int size, String sortBy, boolean isAsc, HttpServletRequest request) {
+    public Page<Product> getProductsInFolder(Long folderId, int page, int size, String sortBy, boolean isAsc, User user) {
 
         //페이징 처리
         Sort.Direction direction = isAsc ? Sort.Direction.ASC : Sort.Direction.DESC;
         Sort sort = Sort.by(direction, sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        //request 에서 토큰 가져오기
-        String token = jwtUtil.resolveToken(request);
-        Claims claims;
-
-        // 토큰이 있는 경우에만 관심상품 조회 가능
-        if (token != null) {
-            //token 검증
-            if (jwtUtil.validateToken(token)) {
-                //토큰에서 사용자 정보 가져오기
-                claims = jwtUtil.getUserInfoFromToken(token);
-            } else {
-                throw new IllegalArgumentException("Token Error");
-            }
-
-            //토큰에서 가져온 사용자 정보를 사용하여 DB 조회
-            User user = userRepository.findByUsername(claims.getSubject()).orElseThrow(
-                    () -> new IllegalArgumentException("사용자가 존재하지 않습니다.")
-            );
-
-            return productRepository.findAllByUserIdAndFolderList_Id(user.getId(), folderId, pageable); //folderId 와 userId 를 통해서 폴더에 있는 관심상품 모두 가져오기
-
-        } else {
-            return null;
-        }
+        return productRepository.findAllByUserIdAndFolderList_Id(user.getId(), folderId, pageable);
     }
 
     private boolean isExistFolderName(String folderName, List<Folder> existFolderList) {
         //기존 폴더 리스트에서 folder name 이 있는지?
-        for(Folder existFolder : existFolderList) {
+        for (Folder existFolder : existFolderList) {
             if (existFolder.getName().equals(folderName)) {
                 return true;
             }

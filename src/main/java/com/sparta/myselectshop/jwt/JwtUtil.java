@@ -2,12 +2,16 @@ package com.sparta.myselectshop.jwt;
 
 
 import com.sparta.myselectshop.entity.UserRoleEnum;
+import com.sparta.myselectshop.security.UserDetailsServiceImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -25,7 +29,7 @@ public class JwtUtil {
     public static final String AUTHORIZATION_KEY = "auth"; // 사용자 권한 값의 키, 사용자 권한도 토큰안에 값을 넣어줄 건데 그거를 가지고 올 때 사용되는 키 값
     private static final String BEARER_PREFIX = "Bearer "; // 토큰을 만들 때 같이 앞에 붙어서 들어가는 부분
     private static final long TOKEN_TIME = 60 * 60 * 1000L; // 토큰 만료 시간에 사용할 시간 -> 1시간
-
+    private final UserDetailsServiceImpl userDetailsService;
     @Value("${jwt.secret.key}") // @Value : 어노테이션이 필드나 메서드(혹은 생성자)의 파라미터 수준에서 표현식 기반으로 값을 주입해 줌
     private String secretKey;
     private Key key; // 토큰을 만들 때 넣어줄 키 값 , 여기서는 secretKey를 넣어줄거임(secretKey를 디코드해서)
@@ -80,6 +84,12 @@ public class JwtUtil {
     // 토큰에서 사용자 정보 가져오기
     public Claims getUserInfoFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody(); //validateToken 부분에서 getBody 를 추가해서 정보를 가져오는 메서드, 검증이 되었다고 가정해서 try,catch 문 없음
+    }
+
+    // 인증 객체 생성
+    public Authentication createAuthentication(String username) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 
 }
